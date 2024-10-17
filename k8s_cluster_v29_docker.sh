@@ -1,7 +1,7 @@
 #!/bin/bash
 
 install_dependencies() {
-	echo -e '\n'
+	echo -e '\n\n'
 	echo 'INSTALLING DEPENDENCIES'
 	echo -e '\n'
 	sudo apt-get update
@@ -28,32 +28,43 @@ sudo sysctl --system
 }
 
 
+install_docker() {
+    echo -e "\n\n"
+    echo "INSTALLING DCOKER"
+    echo -e "\n"
+    # Update the apt package index
+    sudo apt-get update
+    
+    # Install required packages to allow apt to use a repository over HTTPS
+    sudo apt-get install -y \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release
 
-install_containerd() {
-	echo -e '\n'
-	echo 'INSTALLING CONTAINERD'
-	echo -e '\n'
-	sudo apt-get update
-	sudo apt-get install ca-certificates curl -y
-	sudo install -m 0755 -d /etc/apt/keyrings
-	sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-	sudo chmod a+r /etc/apt/keyrings/docker.asc
+    # Add Docker’s official GPG key
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    
+    # Set up the stable repository
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-	echo \
-  		"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  		$(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  		sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    # Install Docker Engine, CLI, and containerd
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-	sudo apt-get update
-	sudo apt install containerd.io -y
+    # Enable and start Docker
+    sudo systemctl enable docker
+    sudo systemctl start docker
 
-	containerd config default | sed 's/SystemdCgroup = false/SystemdCgroup = true/' | sed 's/sandbox_image = "registry.k8s.io\/pause:3.6"/sandbox_image = "registry.k8s.io\/pause:3.9"/' | sudo tee /etc/containerd/config.toml
-
-	sudo systemctl restart containerd
+    # Test the installation
+    sudo docker --version
 }
 
 install_kubernetes() {
-	echo -e '\n'
+	echo -e '\n\n'
 	echo 'INSTALLING KUBERNETES'
 	echo -e '\n'
 	sudo apt-get update
@@ -70,7 +81,7 @@ install_kubernetes() {
 }
 
 install_changeuser() {                            
-	echo -e '\n'
+	echo -e '\n\n'
 	echo 'CHANGE USER'
 	echo -e '\n'
 	sudo -i bash <<'EOF'
@@ -81,18 +92,19 @@ EOF
 }
 
 create_home() {
-	echo -e "\n"
+	echo -e "\n\n"
 	echo "CREATE HOME"
 	echo -e "\n"
 	echo "Running as $(whoami)"
 	mkdir -p $HOME/.kube
 	sudo cp -i /etc/Kubernetes/admin.conf $HOME/.kube/config
 	sudo chown $(id -u):$(id -g) $HOME/.kube/config
+	kubectl get nodes
 }
 
 install_all() {
 	install_dependencies
-	install_containerd
+	install_docker
 	install_kubernetes
 	install_changeuser
 	create_home
