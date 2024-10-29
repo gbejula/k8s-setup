@@ -1,7 +1,7 @@
 #!/bin/bash
 
 install_dependencies() {
-	echo -e '\n\n'
+	echo -e '\n\n\n'
 	echo 'INSTALLING DEPENDENCIES'
 	echo -e '\n'
 	sudo apt-get update
@@ -29,7 +29,7 @@ sudo sysctl --system
 
 
 install_docker() {
-    echo -e "\n\n"
+    echo -e "\n\n\n"
     echo "INSTALLING DCOKER"
     echo -e "\n"
     # Update the apt package index
@@ -59,12 +59,16 @@ install_docker() {
     sudo systemctl enable docker
     sudo systemctl start docker
 
+    containerd config default | sed 's/SystemdCgroup = false/SystemdCgroup = true/' | sed 's/sandbox_image = "registry.k8s.io\/pause:3.6"/sandbox_image = "registry.k8s.io\/pause:3.9"/' | sudo tee /etc/containerd/config.toml
+
+    sudo systemctl restart docker
+
     # Test the installation
     sudo docker --version
 }
 
 install_kubernetes() {
-	echo -e '\n\n'
+	echo -e '\n\n\n'
 	echo 'INSTALLING KUBERNETES'
 	echo -e '\n'
 	sudo apt-get update
@@ -81,7 +85,7 @@ install_kubernetes() {
 }
 
 install_changeuser() {                            
-	echo -e '\n\n'
+	echo -e '\n\n\n'
 	echo 'CHANGE USER'
 	echo -e '\n'
 	sudo -i bash <<'EOF'
@@ -92,13 +96,14 @@ EOF
 }
 
 create_home() {
-	echo -e "\n\n"
+	echo -e "\n\n\n"
 	echo "CREATE HOME"
 	echo -e "\n"
 	echo "Running as $(whoami)"
 	mkdir -p $HOME/.kube
 	sudo cp -i /etc/Kubernetes/admin.conf $HOME/.kube/config
 	sudo chown $(id -u):$(id -g) $HOME/.kube/config
+	echo -e "\n\n\n"
 	kubectl get nodes
 }
 

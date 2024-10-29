@@ -77,6 +77,8 @@ install_changeuser() {
 	echo "Running as $(whoami)"
 	apt install socat
 	kubeadm init --pod-network-cidr=10.200.0.0/16 --apiserver-advertise-address=xxxxxxxxxxxxxxxx
+	echo -e "\n\n"
+	kubectl get nodes
 EOF
 }
 
